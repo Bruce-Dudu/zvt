@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+
 from zvt import zvt_env
 from zvt.contract.api import decode_entity_id
 from zvt.contract.normal_data import NormalData
@@ -78,6 +79,7 @@ class Drawer(object):
             except Exception:
                 pass
 
+            # 绘制主图
             if main_chart == 'kline':
                 trace_name = '{}_kdata'.format(code)
                 trace = go.Candlestick(x=df.index, open=df['open'], close=df['close'], low=df['low'], high=df['high'],
@@ -89,7 +91,7 @@ class Drawer(object):
                     ydata = df[col].values.tolist()
                     traces.append(go.Scatter(x=df.index, y=ydata, mode=mode, name=trace_name, **kwargs))
 
-            # 绘制指标
+            # 绘制主图指标
             factor_df = self.factor_data.entity_map_df.get(entity_id)
             if pd_is_not_null(factor_df):
                 for col in factor_df.columns:
@@ -99,8 +101,8 @@ class Drawer(object):
                     line = go.Scatter(x=df.index, y=ydata, mode=mode, name=trace_name, **kwargs)
                     traces.append(line)
 
+            # 绘制幅图
             if subplot:
-                # 绘制幅图
                 sub_df = self.sub_data.entity_map_df.get(entity_id)
                 if pd_is_not_null(sub_df):
                     for col in sub_df.columns:
@@ -129,8 +131,8 @@ class Drawer(object):
         else:
             fig.add_traces(traces)
 
-        fig.update_layout(self.gen_plotly_layout(width=width, height=height, title=title, keep_ui_state=keep_ui_state,
-                                                 subplot=subplot))
+        fig.layout = self.gen_plotly_layout(width=width, height=height, title=title, keep_ui_state=keep_ui_state,
+                                            subplot=subplot)
 
         if show:
             fig.show()
@@ -170,7 +172,7 @@ class Drawer(object):
 
         fig = go.Figure()
         fig.add_traces([data])
-        fig.update_layout(self.gen_plotly_layout(width=width, height=height, title=title, keep_ui_state=keep_ui_state))
+        fig.layout = self.gen_plotly_layout(width=width, height=height, title=title, keep_ui_state=keep_ui_state)
 
         fig.show()
 
@@ -187,6 +189,10 @@ class Drawer(object):
             uirevision = None
 
         layout = go.Layout(showlegend=True,
+                           plot_bgcolor="#FFF",
+                           hovermode="x",
+                           hoverdistance=100,  # Distance to show hover label of data point
+                           spikedistance=1000,  # Distance to show spike
                            uirevision=uirevision,
                            height=height,
                            width=width,
@@ -195,7 +201,19 @@ class Drawer(object):
                            yaxis=dict(
                                autorange=True,
                                fixedrange=False,
-                               zeroline=False
+                               zeroline=False,
+                               linecolor="#BCCCDC",
+                               showgrid=False
+                           ),
+                           xaxis=dict(
+                               linecolor="#BCCCDC",
+                               showgrid=False,
+                               showspikes=True,  # Show spike line for X-axis
+                               # Format spike
+                               spikethickness=2,
+                               spikedash="dot",
+                               spikecolor="#999999",
+                               spikemode="across",
                            ),
                            legend_orientation="h",
                            **layout_params)
